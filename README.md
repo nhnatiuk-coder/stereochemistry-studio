@@ -70,8 +70,10 @@ After `npm run build:offline`, `npm run test:ui` runs the end-to-end browser ver
 
 ## Projection drawing checks
 
-Fischer and Newman condensed groups anchor the bonded C or O independently
-from the remaining text. Left-side hydroxyl groups appear as HO so that O
+Fischer groups anchor the bonded C or O independently from the remaining text.
+Newman bond rays pass exactly through their attachment atom centers and stop
+just short of the atom glyphs. Ethyl branches show CH2 and CH3 separately with
+a 120-degree angle at CH2. Left-side hydroxyl groups appear as HO so that O
 faces the bond. `CHROMIUM_EXECUTABLE=/path/to/chromium node
 scripts/verify-projections.mjs` checks all 142 projection views for clipped
 labels and bonds passing through text. The generator retains the same

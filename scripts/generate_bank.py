@@ -32,6 +32,43 @@ def attachment_label(x,y,label,side=1,size=20):
 def line(x,y,a,b): return f'<path d="M{x},{y} L{a},{b}" stroke="#172e3e" stroke-width="2.4" fill="none"/>'
 def svg(body): return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 320" role="img">'+body+'</svg>'
 
+def newman_label(x,y,label,side):
+    atom='O' if label=='OH' else 'C' if label.startswith('CH') else label
+    body=text(x,y,atom,19)
+    suffix='H' if label=='OH' else label[1:] if label.startswith('CH') else ''
+    if suffix:
+        anchor='start' if side>0 else 'end'
+        body+=f'<text x="{x+side*7}" y="{y}" text-anchor="{anchor}" dominant-baseline="middle" font-family="Arial,sans-serif" font-size="19" fill="#172e3e">{suffix}</text>'
+    return f'<g data-attachment-atom="{atom}" data-attachment-x="{x}" data-attachment-y="{y}" data-group="{label}">{body}</g>'
+
+def atom_clearance(dx,dy,label):
+    # Clip along the bond direction at the bonded atom's text rectangle.
+    half_width=13 if label in ('Br','Cl') else 9
+    return min(half_width/abs(dx) if abs(dx)>1e-8 else math.inf,
+               12/abs(dy) if abs(dy)>1e-8 else math.inf)+2
+
+def newman_group(x,y,start,label):
+    ax,ay=200+x*100,148+y*100
+    stop=100-atom_clearance(x,y,label)
+    body=f'<path data-newman-ray="true" data-atom-x="{ax}" data-atom-y="{ay}" d="M{200+x*start},{148+y*start} L{200+x*stop},{148+y*stop}" stroke="#172e3e" stroke-width="2.4" fill="none"/>'
+    side=-1 if x<-.1 else 1
+    if label=='CH₂CH₃':
+        # Show CH2 and CH3 separately. A 120-degree angle at CH2 preserves
+        # normal tetrahedral chain geometry and keeps both C attachment sites clear.
+        if abs(x)<.1:
+            tx,ty=(math.sqrt(3)/2,-.5) if y<0 else (-math.sqrt(3)/2,.5)
+            side=-1 if tx>0 else 1
+        else:
+            tx,ty=0,1 if y>0 else -1
+        bx,by=ax+44*tx,ay+44*ty
+        a_gap=atom_clearance(tx,ty,'C');b_gap=atom_clearance(tx,ty,'C')
+        body+=line(ax+tx*a_gap,ay+ty*a_gap,bx-tx*b_gap,by-ty*b_gap)
+        body+=newman_label(ax,ay,'CH₂',side)
+        body+=newman_label(bx,by,'CH₃',-1 if bx<200 else 1)
+    else:
+        body+=newman_label(ax,ay,label,side)
+    return body
+
 def local_tag(m, center, coords):
     # Infer a center's RDKit tag from explicit local 3D coordinates. This avoids
     # hand-coded R/S conventions and lets the toolkit apply CIP priorities.
@@ -65,7 +102,7 @@ def projection(base, centers, chain, groups, flips, kind, rotation=0):
     else:
         assert len(centers)==2
         ci,cj=centers
-        body+='<circle cx="200" cy="160" r="46" fill="white" stroke="#172e3e" stroke-width="2.4"/>'
+        body+='<circle cx="200" cy="148" r="46" fill="white" stroke="#172e3e" stroke-width="2.4"/>'
         for k,(ci,other) in enumerate([(ci,cj),(cj,ci)]):
             neighbors=[v.GetIdx() for v in m.GetAtomWithIdx(ci).GetNeighbors() if v.GetIdx()!=other]
             # terminal carbon, heteroatom, hydrogen order; swap to enumerate stereo.
@@ -77,15 +114,11 @@ def projection(base, centers, chain, groups, flips, kind, rotation=0):
                 x,y=math.cos(angle),math.sin(angle)
                 coords[i]=(x,-y,0.6 if k==0 else -0.6)
                 start=0 if k==0 else 46
-                body+=line(200+x*start,160+y*start,200+x*99,160+y*99)
                 atom=m.GetAtomWithIdx(i)
                 label=groups[0 if k==0 else -1] if atom.GetSymbol()=='C' else ('OH' if atom.GetSymbol()=='O' else atom.GetSymbol())
-                # Leave clear space above/below the upright attachment atom.
-                # This keeps each ray at its true projection angle while
-                # preventing it from passing through an H or a chain suffix.
-                body+=attachment_label(round(200+x*99,2),round(160+y*99+(15 if y>0 else -15),2),label,-1 if x<-.1 else 1,19)
+                body+=newman_group(x,y,start,label)
             local_tag(m,ci,coords)
-        body+='<circle cx="200" cy="160" r="5" fill="#172e3e"/>'+text(200,304,'View C2 → C3 • dot = front carbon',13)
+        body+='<circle cx="200" cy="148" r="5" fill="#172e3e"/>'+text(200,304,'View C2 → C3 • dot = front carbon',13)
     m=Chem.RemoveHs(m)
     Chem.AssignStereochemistry(m,cleanIt=True,force=True)
     return canonical(m),svg(body),cip(m)
