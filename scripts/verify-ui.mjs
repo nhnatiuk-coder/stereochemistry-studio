@@ -11,7 +11,7 @@ const browser=await chromium.launch({executablePath:process.env.CHROMIUM_EXECUTA
 try{
  globalThis.testPage=await browser.newPage({viewport:{width:1360,height:1000}});const page=globalThis.testPage;const errors=[];page.on('pageerror',e=>{errors.push(e.message);console.log('PAGE ERROR',e.stack)});
  const entry=server?'http://127.0.0.1:5190/':file;
- const session=()=>page.evaluate(()=>JSON.parse(localStorage.getItem('stereochemistry-studio-v1')));
+ const session=()=>page.evaluate(()=>JSON.parse(localStorage.getItem(location.hash==='#/instructor'?'stereochemistry-studio-v1-instructor':'stereochemistry-studio-v1')));
  async function readyEditor(){await page.locator('[data-testid="open-file-button"]:visible').waitFor({timeout:120000});await page.waitForFunction(()=>{const el=document.querySelector('main');let f=el?.[Object.keys(el||{}).find(k=>k.startsWith('__reactFiber$'))];while(f&&f.type?.name!=='App')f=f.return;for(let h=f?.memoizedState;h;h=h.next)if(typeof h.memoizedState?.current?.setMolecule==='function')return true;return false},{},{timeout:120000});}
  async function importAnswer(smiles){
    await readyEditor();
@@ -33,16 +33,16 @@ try{
  await page.getByRole('heading',{name:'Set up your stereochemistry practice.'}).waitFor({timeout:60000});console.log('Setup opened.');
  await page.getByRole('radio',{name:'Draw from a Name',exact:false}).check();await page.getByRole('radio',{name:'5',exact:true}).check();await page.getByRole('button',{name:'Start 5 questions'}).click();
  let state=await session();await importAnswer(state.questions[0].answer);
- await page.waitForFunction(()=>{let s=JSON.parse(localStorage.getItem('stereochemistry-studio-v1'));return s.questions[0].draft?.includes('V3000')},{},{timeout:30000});
+ await page.waitForFunction(()=>{let s=JSON.parse(localStorage.getItem(location.hash==='#/instructor'?'stereochemistry-studio-v1-instructor':'stereochemistry-studio-v1'));return s.questions[0].draft?.includes('V3000')},{},{timeout:30000});
  await page.reload({waitUntil:'domcontentloaded',timeout:120000});await readyEditor();await page.waitForTimeout(1500);await page.getByRole('button',{name:'Check answer',exact:true}).click();await page.getByRole('button',{name:'Next question →'}).waitFor({timeout:60000});
  state=await session();assert.equal(state.questions[0].correct,true,'Restored Ketcher drawing must grade correctly');await page.getByRole('button',{name:'Next question →'}).click();
  for(let i=1;i<5;i++)await correctCurrent();
  await page.getByRole('heading',{name:'Your stereochemistry report.'}).waitFor();assert.equal((await session()).questions.filter(q=>q.correct).length,5);console.log('PASS: offline Ketcher, V3000 stereo grading, draft restore, drawing set, and report.');
- await page.getByRole('button',{name:'Start another set'}).click();await page.getByRole('radio',{name:'Assign R/S',exact:false}).check();await page.getByRole('radio',{name:'Intro',exact:false}).check();await page.getByRole('checkbox',{name:'Instructor preview',exact:false}).check();await page.getByRole('button',{name:'Start 5 questions'}).click();
+ await page.goto(entry+'#/instructor');await page.getByRole('button',{name:'Preview set',exact:true}).click();await page.getByRole('radio',{name:'5',exact:true}).check();await page.getByRole('radio',{name:'Assign R/S',exact:false}).check();await page.getByRole('radio',{name:'Intro',exact:false}).check();await page.getByRole('checkbox',{name:'Instructor preview',exact:false}).check();await page.getByRole('button',{name:'Start 5 questions'}).click();
  state=await session();const molecule=bank.find(m=>m.id===state.questions[0].a);await page.getByRole('button',{name:'Show hint',exact:true}).click();
  for(let attempt=0;attempt<3;attempt++){
    for(const c of molecule.centers)await page.locator(`input[name="center${c.locant}"]`).locator('..').filter({hasText:c.value==='R'?'S':'R'}).getByRole('radio').check();
-   await page.getByRole('button',{name:'Check answer',exact:true}).click();await page.waitForFunction(n=>JSON.parse(localStorage.getItem('stereochemistry-studio-v1')).questions[0].attempts.length===n,attempt+1);
+   await page.getByRole('button',{name:'Check answer',exact:true}).click();await page.waitForFunction(n=>JSON.parse(localStorage.getItem(location.hash==='#/instructor'?'stereochemistry-studio-v1-instructor':'stereochemistry-studio-v1')).questions[0].attempts.length===n,attempt+1);
  }
  await page.getByRole('button',{name:'Next question →'}).click();for(let i=1;i<5;i++)await correctCurrent();
  state=await session();assert.equal(state.complete,true);assert.equal(state.questions.filter(q=>q.correct).length,4);assert.equal(state.questions[0].attempts.length,3);assert.equal(state.questions[0].hint,true);assert.equal(state.settings.teacher,true);console.log('PASS: three attempts, hints, R/S grading, and instructor report.');
@@ -54,4 +54,4 @@ try{
  const downloading=page.waitForEvent('download');await page.getByRole('button',{name:'Export results (JSON)'}).click();const download=await downloading;const data=JSON.parse(readFileSync(await download.path(),'utf8'));assert.equal(data.questions.length,10);assert.equal(data.complete,true);
  assert.equal((await session()).complete,true);
  assert.deepEqual(errors,[]);console.log('PASS: all six pair relationships, mobile layout, JSON export, persistent results, and zero browser errors.');
-}catch(e){console.log('FAILURE STATE',await globalThis.testPage?.evaluate(()=>({text:document.body.innerText,session:JSON.parse(localStorage.getItem('stereochemistry-studio-v1'))})).catch(()=>null));throw e;}finally{await browser.close();await server?.close();}
+}catch(e){console.log('FAILURE STATE',await globalThis.testPage?.evaluate(()=>({text:document.body.innerText,session:JSON.parse(localStorage.getItem(location.hash==='#/instructor'?'stereochemistry-studio-v1-instructor':'stereochemistry-studio-v1'))})).catch(()=>null));throw e;}finally{await browser.close();await server?.close();}

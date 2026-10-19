@@ -2,20 +2,20 @@ import React,{useState,useEffect,useRef,useMemo,lazy,Suspense} from 'react';
 import {createRoot} from 'react-dom/client';
 import {bank,relations,kindNames,buildSet,gradeDrawing,canonicalize} from './chemistry.js';
 import './style.css';
+import Instructor from './instructor.jsx';
 const DrawingEditor=lazy(()=>import('./sketcher.jsx'));
 const STORAGE='stereochemistry-studio-v1';
 const lookup=Object.fromEntries(bank.map(m=>[m.id,m]));
 const taskName={assign:'Assign R/S',draw:'Draw from a Name',pairs:'Compare Compounds'};
 const defaults={mode:'mixed',difficulty:'progressive',count:50,perspectives:['line','newman','fischer'],hints:true,teacher:false};
-function load(){try{const x=JSON.parse(localStorage.getItem(STORAGE));return x?.version===1?x:null;}catch{return null;}}
-const startState=load();
-function save(s){try{localStorage.setItem(STORAGE,JSON.stringify(s));}catch{/* Practice remains usable when storage is unavailable. */}}
+function load(storage){try{const x=JSON.parse(localStorage.getItem(storage));return x?.version===1?x:null;}catch{return null;}}
+function save(s,storage){try{localStorage.setItem(storage,JSON.stringify(s));}catch{/* Practice remains usable when storage is unavailable. */}}
 function Svg({view,label}){return <div className="molecule" role="img" aria-label={label} dangerouslySetInnerHTML={{__html:view.svg}}/>;}
 function StudentStructure({rdkit,structure}){const svg=useMemo(()=>{if(!rdkit||!structure)return '';let m;try{m=rdkit.get_mol(structure);return m?.get_svg(400,320)||''}catch{return ''}finally{m?.delete()}},[rdkit,structure]);return svg?<Svg view={{svg}} label="Your submitted structure"/>:<p className="muted">{rdkit?'No readable structure submitted.':'Loading your structure preview…'}</p>;}
 function Pill({children}){return <span className="pill">{children}</span>;}
 function SelectCards({label,options,value,onChange}){return <fieldset><legend>{label}</legend><div className="choices">{options.map(([v,title,desc])=><label className={'choice '+(value===v?'selected':'')} key={v}><input type="radio" name={label} value={v} checked={value===v} onChange={()=>onChange(v)}/><span><strong>{title}</strong>{desc&&<small>{desc}</small>}</span></label>)}</div></fieldset>;}
 function Rules(){return <details className="rules"><summary>Projection guide and answer definitions</summary><div className="guide-grid"><div><h3>R/S assignments</h3><p>Rank by atomic number, then compare outward to the first difference. Multiple bonds use duplicate-atom comparisons. With priority 4 away, clockwise is R and counterclockwise is S.</p><p>Labels C2, C3, etc. identify the carbon to assign; they do not reveal its configuration.</p></div><div><h3>Reading projections</h3><p><b>Line-angle:</b> solid wedges point toward you; dashed wedges point away. Carbon endpoints and vertices imply carbon atoms.</p><p><b>Fischer:</b> horizontal bonds point toward you; vertical bonds point away. A 180° rotation preserves configuration; a 90° rotation does not.</p><p><b>Newman:</b> look from C2 toward C3. Bonds from the dot attach to the front carbon (C2); bonds from the circle attach to the back carbon (C3). Rotation about a single bond changes conformation, not configuration.</p></div><div><h3>Comparing pairs</h3><p>Same compound: identical connectivity and configuration, allowing rotation and symmetry. Not isomers: different formulas. Constitutional isomers: same formula, different connectivity.</p><p>Enantiomers: nonsuperimposable mirror images. Diastereomers: stereoisomers that are not mirror images. Choose <b>E/Z isomers</b> when the only difference is double-bond configuration, although this is also a type of diastereomer.</p><p>A meso compound is identical to its mirror image despite having stereocenters. Always check symmetry.</p></div></div></details>;}
-function Setup({settings,setSettings,start,resume}){
+function Setup({settings,setSettings,start,resume,instructor}){
  const set=(key,v)=>setSettings(s=>({...s,[key]:v}));
  return <><div className="page-title"><Pill>Organic chemistry practice activity</Pill><h1>Set up your stereochemistry practice.</h1><p>Read it. Draw it. See the relationship. Work through a self-paced set with hints, three attempts, and explanations.</p></div>
  {resume&&<div className="resume"><span>Your saved set is ready to continue.</span><button onClick={resume}>Resume practice →</button></div>}
@@ -25,18 +25,20 @@ function Setup({settings,setSettings,start,resume}){
  ['progressive','Progressive','Build from one center to multiple centers'],['1','Intro','One center and straightforward priorities'],['2','Intermediate','Two centers, meso compounds, and E/Z pairs'],['3','Advanced','More challenging chains and mixed perspectives']]}/>
  <SelectCards label="Number of questions" value={settings.count} onChange={v=>set('count',v)} options={[5,10,25,50].map(n=>[n,String(n)])}/>
  <fieldset><legend>Drawing perspectives</legend><p className="muted">Applies to structures shown in Assign R/S and Compare Compounds. Drawing answers use Ketcher.</p><div className="checks">{Object.entries(kindNames).map(([v,name])=><label key={v}><input type="checkbox" checked={settings.perspectives.includes(v)} onChange={()=>{let p=settings.perspectives.includes(v)?settings.perspectives.filter(k=>k!==v):[...settings.perspectives,v];if(p.length)set('perspectives',p);}}/>{name}</label>)}</div>{settings.perspectives.includes('newman')&&<p className="note">Newman examples show the C2–C3 bond; these include two stereocenters, including in Intro sets.</p>}{!settings.perspectives.includes('line')&&<p className="note">E/Z and constitutional-isomer examples use line-angle drawings and are omitted when no eligible views exist.</p>}</fieldset>
- <fieldset><legend>Options</legend><div className="checks"><label><input type="checkbox" checked={settings.hints} onChange={e=>set('hints',e.target.checked)}/>Offer hints</label><label><input type="checkbox" checked={settings.teacher} onChange={e=>set('teacher',e.target.checked)}/>Instructor preview (show solutions)</label></div></fieldset>
+ <fieldset><legend>Options</legend><div className="checks"><label><input type="checkbox" checked={settings.hints} onChange={e=>set('hints',e.target.checked)}/>Offer hints</label>{instructor&&<label><input type="checkbox" checked={settings.teacher} onChange={e=>set('teacher',e.target.checked)}/>Instructor preview (show solutions)</label>}</div></fieldset>
  <div className="setup-bottom"><button className="primary" onClick={start}>Start {settings.count} questions →</button><span className="muted">Randomized sets • No account required</span></div></section><Rules/>
  <div className="features"><section className="panel"><span className="feature-icon">R / S</span><h2>Assign the configuration</h2><p>Practice CIP priorities with line-angle structures, Fischer projections, and Newman projections.</p></section><section className="panel"><span className="feature-icon">✎</span><h2>Draw the stereoisomer</h2><p>Use Ketcher’s wedge and dashed bonds. Correct configurations are accepted in any orientation.</p></section><section className="panel"><span className="feature-icon">⇄</span><h2>Compare perspectives</h2><p>Look past rotations and conformations. Check formula, connectivity, configuration, and symmetry.</p></section></div></>;
 }
-function App(){
- const [screen,setScreen]=useState(startState?.complete?'results':startState?'practice':'setup');
- const [settings,setSettings]=useState(startState?.settings||defaults);
+function App({instructor=false}){
+ const storage=instructor?STORAGE+'-instructor':STORAGE;
+ const startState=useMemo(()=>{const s=load(storage);return s&&{...s,settings:{...s.settings,teacher:instructor&&s.settings.teacher}}},[storage,instructor]);
+ const [screen,setScreen]=useState(instructor?'library':startState?.complete?'results':startState?'practice':'setup');
+ const [settings,setSettings]=useState(startState?.settings||{...defaults,teacher:instructor});
  const [session,setSession]=useState(startState);
  const [input,setInput]=useState({}); const [message,setMessage]=useState(''); const [busy,setBusy]=useState(false);
  const [rdkit,setRdkit]=useState(null);const [engineError,setEngineError]=useState(false);const editor=useRef(null);
  useEffect(()=>{let alive=true;import('@rdkit/rdkit').then(m=>(m.default||m)(window.__STEREO_WASM__?{wasmBinary:Uint8Array.from(atob(window.__STEREO_WASM__),c=>c.charCodeAt(0))}:{locateFile:f=>`${import.meta.env.BASE_URL}rdkit/${f}`})).then(r=>{if(alive)setRdkit(r)}).catch(()=>setEngineError(true));return()=>{alive=false}},[]);
- useEffect(()=>{if(session)save(session)},[session]);
+ useEffect(()=>{if(session)save(session,storage)},[session,storage]);
  const q=session?.questions[session.index];const molecule=q&&lookup[q.a];
  useEffect(()=>{setInput({});setMessage('')},[q?.id,session?.started]);
  function start(){editor.current=null;const s={version:1,started:new Date().toISOString(),settings:{...settings},questions:buildSet(settings),index:0,complete:false};setSession(s);setScreen('practice');setMessage('');window.scrollTo(0,0);}
@@ -65,8 +67,9 @@ function App(){
  function next(){editor.current=null;setMessage('');setInput({});if(session.index===session.questions.length-1){setSession(s=>({...s,complete:true,finished:new Date().toISOString()}));setScreen('results');}else setSession(s=>({...s,index:s.index+1}));window.scrollTo(0,0);}
  function hint(){updateQuestion({hint:true});}
  function exportJson(){const blob=new Blob([JSON.stringify({...session,questions:session.questions.map(q=>({...q,molecule:lookup[q.a].name,otherMolecule:q.b?lookup[q.b].name:undefined}))},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='stereochemistry-results.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
- return <><header><div className="nav"><a href="#" className="brand" onClick={e=>{e.preventDefault();setScreen('setup')}}><span className="logo">⚗</span><span><b>Stereochemistry Studio</b><small>Configuration and structure practice</small></span></a><nav><button className={screen!=='results'?'active':''} onClick={()=>setScreen(session&&!session.complete?'practice':'setup')}>Practice</button><button disabled={!session?.complete} onClick={()=>setScreen('results')}>Results</button></nav></div></header><main>
- {screen==='setup'&&<Setup settings={settings} setSettings={setSettings} start={start} resume={session&&!session.complete?()=>setScreen('practice'):null}/>}
+ return <><header><div className="nav"><a href="#" className="brand" onClick={e=>{e.preventDefault();setScreen(instructor?'library':'setup')}}><span className="logo">⚗</span><span><b>Stereochemistry Studio</b><small>Configuration and structure practice</small></span></a><nav>{instructor&&<button className={screen==='library'?'active':''} onClick={()=>setScreen('library')}>Problem bank</button>}<button className={['setup','practice'].includes(screen)?'active':''} onClick={()=>setScreen(session&&!session.complete?'practice':'setup')}>{instructor?'Preview set':'Student practice'}</button><button disabled={!session?.complete} onClick={()=>setScreen('results')}>Results</button></nav>{instructor&&<a className="student-link" href="#/student">Student page →</a>}</div></header><main>
+ {screen==='library'&&instructor&&<Instructor/>}
+ {screen==='setup'&&<Setup instructor={instructor} settings={settings} setSettings={setSettings} start={start} resume={session&&!session.complete?()=>setScreen('practice'):null}/>}
  {screen==='practice'&&session&&<>
  <div className="practice-top"><div><Pill>{taskName[q.task]}</Pill><h1>Question {session.index+1}<span className="muted"> / {session.questions.length}</span></h1></div><button className="text-button" onClick={()=>setScreen('setup')}>Practice settings</button></div>
  <div className="progress" aria-label={`${session.index} of ${session.questions.length} completed`}><div style={{width:`${session.index/session.questions.length*100}%`}}/></div>
@@ -84,4 +87,11 @@ function App(){
  <h2>Question review</h2>{session.questions.map((q,i)=>{const a=lookup[q.a];return <section className="panel review" key={q.id}><div className="review-title"><Pill>{q.correct?'Correct':q.skipped?'Skipped':'Incorrect'}</Pill><h3>{i+1}. {taskName[q.task]} — {a.name}{q.b?' / '+lookup[q.b].name:''}</h3></div><p className="muted">{q.attempts.length} attempt{q.attempts.length===1?'':'s'}{q.hint?' · used hint':''}</p><div className="review-structures"><Svg view={a.views[q.task==='draw'?0:q.va]} label={a.name}/>{q.b&&<Svg view={lookup[q.b].views[q.vb]} label={lookup[q.b].name}/>}</div>{q.task==='draw'&&q.attempts.length>0?<><p><b>Your submitted drawing</b></p><StudentStructure rdkit={rdkit} structure={q.draft||q.attempts.at(-1).answer}/><p><b>Required structure:</b> {a.name}</p></>:<p><b>Your last answer:</b> {q.attempts.at(-1)?.answer||'No answer submitted'}<br/><b>Correct answer:</b> {q.answer}</p>}<p>{q.explanation}</p></section>})}</>}
  </main><footer>Standalone practice activity • Your work stays on this device • No automatic grade passback</footer></>;
 }
-createRoot(document.getElementById('root')).render(<App/>);
+function PageRouter(){
+ const route=()=>window.location.hash?window.location.hash==='#/instructor':/\/instructor\/?$/.test(window.location.pathname);
+ const [instructor,setInstructor]=useState(route);
+ useEffect(()=>{const change=()=>setInstructor(route());window.addEventListener('hashchange',change);return()=>window.removeEventListener('hashchange',change)},[]);
+ useEffect(()=>{document.title=instructor?'Instructor problem bank — Stereochemistry Studio':'Student practice — Stereochemistry Studio'},[instructor]);
+ return <App key={instructor?'instructor':'student'} instructor={instructor}/>;
+}
+createRoot(document.getElementById('root')).render(<PageRouter/>);

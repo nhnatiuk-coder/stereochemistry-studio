@@ -8,6 +8,19 @@ Install Node.js 22 or newer, run `npm ci`, then `npm run dev`. To publish on Clo
 
 The default set is **Mixed / Progressive / 50 questions**. Students can choose Assign R/S, Draw from a Name, or Compare Compounds. Hints, three attempts, worked explanations, saved progress, and a separate report page are included. The report can be printed to PDF or exported as JSON. Instructor preview uses the same report flow and is labeled in the report.
 
+## Student and instructor pages
+
+- Student practice: append `/#/student` to the site address (the default page).
+- Instructor problem bank: append `/#/instructor` to the site address.
+
+The instructor page lists every assignment view (307), every R/S drawing prompt
+(55), and every unordered compound pairing (2,850). Pair selectors expose all
+available projection combinations. Filter by task, difficulty, projection,
+relationship, or search by name, formula, answer, or stable problem ID. Answers
+can be shown or hidden. Instructor preview sets use separate saved progress;
+students do not see the instructor solution toggle. The instructor page is
+accessible to anyone with its link and is not password protected.
+
 ## Chemistry coverage
 
 - Assign configurations at labeled tetrahedral carbons in line-angle, Fischer, and Newman views.
