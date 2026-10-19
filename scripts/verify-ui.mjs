@@ -34,7 +34,7 @@ try{
  await page.getByRole('radio',{name:'Draw from a Name',exact:false}).check();await page.getByRole('radio',{name:'5',exact:true}).check();await page.getByRole('button',{name:'Start 5 questions'}).click();
  let state=await session();await importAnswer(state.questions[0].answer);
  await page.waitForFunction(()=>{let s=JSON.parse(localStorage.getItem(location.hash==='#/instructor'?'stereochemistry-studio-v1-instructor':'stereochemistry-studio-v1'));return s.questions[0].draft?.includes('V3000')},{},{timeout:30000});
- await page.reload({waitUntil:'domcontentloaded',timeout:120000});await readyEditor();await page.waitForTimeout(1500);await page.getByRole('button',{name:'Check answer',exact:true}).click();await page.getByRole('button',{name:'Next question →'}).waitFor({timeout:60000});
+ await page.reload({waitUntil:'domcontentloaded',timeout:120000});await page.getByRole('button',{name:'Resume practice →'}).click();await readyEditor();await page.waitForTimeout(1500);await page.getByRole('button',{name:'Check answer',exact:true}).click();await page.getByRole('button',{name:'Next question →'}).waitFor({timeout:60000});
  state=await session();assert.equal(state.questions[0].correct,true,'Restored Ketcher drawing must grade correctly');await page.getByRole('button',{name:'Next question →'}).click();
  for(let i=1;i<5;i++)await correctCurrent();
  await page.getByRole('heading',{name:'Your stereochemistry report.'}).waitFor();assert.equal((await session()).questions.filter(q=>q.correct).length,5);console.log('PASS: offline Ketcher, V3000 stereo grading, draft restore, drawing set, and report.');

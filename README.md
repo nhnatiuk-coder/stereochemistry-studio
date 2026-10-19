@@ -10,7 +10,7 @@ The default set is **Mixed / Progressive / 50 questions**. Students can choose A
 
 ## Student and instructor pages
 
-- Student practice: append `/#/student` to the site address (the default page).
+- Student practice: append `/#/student` to the site address (the default page). It always opens on practice settings. An unfinished set can be resumed; completed reports remain available through Results.
 - Instructor problem bank: append `/#/instructor` to the site address.
 
 The instructor page lists each unique R/S assignment (55), every R/S drawing prompt

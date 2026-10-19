@@ -32,7 +32,7 @@ function Setup({settings,setSettings,start,resume,instructor}){
 function App({instructor=false}){
  const storage=instructor?STORAGE+'-instructor':STORAGE;
  const startState=useMemo(()=>{const s=load(storage);return s&&{...s,settings:{...s.settings,teacher:instructor&&s.settings.teacher}}},[storage,instructor]);
- const [screen,setScreen]=useState(instructor?'library':startState?.complete?'results':startState?'practice':'setup');
+ const [screen,setScreen]=useState(instructor?'library':'setup');
  const [settings,setSettings]=useState(startState?.settings||{...defaults,teacher:instructor});
  const [session,setSession]=useState(startState);
  const [input,setInput]=useState({}); const [message,setMessage]=useState(''); const [busy,setBusy]=useState(false);

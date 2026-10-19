@@ -18,7 +18,11 @@ try{
   await page.getByRole('heading',{name:'Set up your stereochemistry practice.'}).waitFor();
   assert.equal(await page.getByRole('checkbox',{name:/Instructor preview/}).count(),0);
   await page.getByRole('radio',{name:'5',exact:true}).check();await page.getByRole('button',{name:'Start 5 questions'}).click();
-  console.log('Student practice opened.');await page.goto('http://127.0.0.1:5191/#/instructor',{waitUntil:'domcontentloaded'});
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.getByRole('heading',{name:'Set up your stereochemistry practice.'}).waitFor();
+  await page.getByRole('button',{name:'Resume practice →'}).click();
+  await page.getByRole('heading',{name:/Question 1/}).waitFor();
+  console.log('Student page opens on settings and resumes saved practice.');await page.goto('http://127.0.0.1:5191/#/instructor',{waitUntil:'domcontentloaded'});
   await page.getByRole('heading',{name:'Preview the complete problem bank.'}).waitFor();
   assert.equal(await page.locator('article[data-problem-id]').count(),12);await page.getByRole('button',{name:'Assign R/S (55)',exact:true}).waitFor();console.log('55 unique R/S problems displayed.');
   await page.getByRole('combobox',{name:'Projection',exact:true}).selectOption('newman');
@@ -59,9 +63,21 @@ try{
   await page.getByRole('radio',{name:'5',exact:true}).check();await page.getByRole('button',{name:'Start 5 questions'}).click();
   await page.getByRole('heading',{name:'Instructor solution'}).waitFor();
   await page.getByRole('link',{name:'Student page →'}).click();
+  await page.getByRole('heading',{name:'Set up your stereochemistry practice.'}).waitFor();
+  await page.getByRole('button',{name:'Resume practice →'}).click();
   await page.getByRole('heading',{name:/Question 1/}).waitFor();
   assert.equal(await page.getByRole('heading',{name:'Instructor solution'}).count(),0);
   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('stereochemistry-studio-v1')).settings.teacher),false);
+  for(let i=0;i<5;i++){
+    await page.getByRole('button',{name:'Skip and review',exact:true}).click();
+    await page.getByRole('button',{name:/Next question|Finish and view report/}).click();
+  }
+  await page.getByRole('heading',{name:'Your stereochemistry report.'}).waitFor();
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.getByRole('heading',{name:'Set up your stereochemistry practice.'}).waitFor();
+  assert.equal(await page.getByRole('button',{name:'Resume practice →'}).count(),0);
+  await page.getByRole('button',{name:'Results',exact:true}).click();
+  await page.getByRole('heading',{name:'Your stereochemistry report.'}).waitFor();
   assert.deepEqual(errors,[]);
   console.log('PASS: full bank, projection and relationship filters, all answer categories, search, pagination, mobile layout, and separate student/instructor sessions.');
 }finally{await browser.close();await server.close();}
