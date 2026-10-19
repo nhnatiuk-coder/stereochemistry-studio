@@ -1,0 +1,10 @@
+node_modules/
+dist/
+offline-build/
+release/
+public/rdkit/
+.wrangler/
+.env*
+.dev.vars*
+*.zip
+Stereochemistry-Studio.html

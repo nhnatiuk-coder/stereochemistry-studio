@@ -1,0 +1,11 @@
+import {build} from 'vite';
+import {readFileSync,writeFileSync} from 'node:fs';
+import {resolve} from 'node:path';
+await build({root:resolve('.'),build:{outDir:'offline-build',minify:false,cssCodeSplit:false,rollupOptions:{output:{inlineDynamicImports:true}}}});
+const dir='offline-build';let html=readFileSync(dir+'/index.html','utf8');
+html=html.replace(/<script type="module"[^>]*src="([^"]+)"[^>]*><\/script>/,(_,src)=>`<script type="module">${readFileSync(resolve(dir,src),'utf8').replace(/<\/script/gi,'<\\/script')}</script>`);
+html=html.replace(/<link rel="stylesheet"[^>]*href="([^"]+)"[^>]*>/g,(_,src)=>`<style>${readFileSync(resolve(dir,src),'utf8')}</style>`);
+html=html.replace(/<link rel="modulepreload"[^>]*>/g,'');
+const wasm=readFileSync('public/rdkit/RDKit_minimal.wasm').toString('base64');
+html=html.replace('<head>','<head><script>window.__STEREO_WASM__="'+wasm+'";</script>');
+writeFileSync('Stereochemistry-Studio.html',html);console.log('Offline file written:',(Buffer.byteLength(html)/1024/1024).toFixed(1),'MiB');
