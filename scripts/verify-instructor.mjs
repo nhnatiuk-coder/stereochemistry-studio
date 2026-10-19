@@ -78,6 +78,31 @@ try{
   assert.equal(await page.getByRole('button',{name:'Resume practice →'}).count(),0);
   await page.getByRole('button',{name:'Results',exact:true}).click();
   await page.getByRole('heading',{name:'Your stereochemistry report.'}).waitFor();
+  await page.getByRole('button',{name:'Start another set'}).click();
+  const ezToggle=page.getByRole('checkbox',{name:'Include E/Z isomers',exact:true});
+  assert.equal(await ezToggle.isChecked(),true);
+  await ezToggle.uncheck();
+  await page.getByRole('radio',{name:'Compare Compounds',exact:false}).check();
+  await page.getByRole('radio',{name:'10',exact:true}).check();
+  await page.getByRole('button',{name:'Start 10 questions'}).click();
+  assert.equal(await page.getByRole('radio',{name:'E/Z isomers',exact:true}).count(),0);
+  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('stereochemistry-studio-v1')).settings.includeEZ),false);
+  await page.reload({waitUntil:'domcontentloaded'});
+  assert.equal(await page.getByRole('checkbox',{name:'Include E/Z isomers',exact:true}).isChecked(),false);
+  await page.getByRole('button',{name:'Resume practice →'}).click();
+  assert.equal(await page.getByRole('radio',{name:'E/Z isomers',exact:true}).count(),0);
+  for(let i=0;i<10;i++){
+    await page.getByRole('button',{name:'Skip and review',exact:true}).click();
+    await page.getByRole('button',{name:/Next question|Finish and view report/}).click();
+  }
+  await page.getByRole('heading',{name:'Your stereochemistry report.'}).waitFor();
+  await page.getByText(/E\/Z excluded/).waitFor();
+  await page.getByRole('button',{name:'Start another set'}).click();
+  await page.getByRole('checkbox',{name:'Include E/Z isomers',exact:true}).check();
+  await page.getByRole('button',{name:'Start 10 questions'}).click();
+  await page.getByRole('radio',{name:'E/Z isomers',exact:true}).waitFor();
+  assert.ok(await page.evaluate(()=>JSON.parse(localStorage.getItem('stereochemistry-studio-v1')).questions.some(q=>q.answer==='E/Z isomers')));
+  console.log('PASS: optional E/Z checkbox, answer choices, saved settings, resume, reports, and re-enabled coverage.');
   assert.deepEqual(errors,[]);
   console.log('PASS: full bank, projection and relationship filters, all answer categories, search, pagination, mobile layout, and separate student/instructor sessions.');
 }finally{await browser.close();await server.close();}

@@ -22,7 +22,7 @@ const pick=(a)=>a[Math.floor(Math.random()*a.length)];
 function views(m,settings){return m.views.filter(v=>settings.perspectives.includes(v.kind));}
 export function buildSet(settings){
   const modes=settings.mode==='mixed'?['assign','draw','pairs']:[settings.mode];
-  const available=bank.filter(m=>views(m,settings).length);
+  const available=bank.filter(m=>views(m,settings).length&&(settings.includeEZ!==false||!m.alkene));
   let used=new Set(), result=[];
   // Cycling shuffled coverage slots guarantees all enabled tasks, projections,
   // and eligible relationship types without fixing the opening question.

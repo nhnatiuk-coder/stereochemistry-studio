@@ -23,6 +23,14 @@ can be shown or hidden. Instructor preview sets use separate saved progress;
 students do not see the instructor solution toggle. The instructor page is
 accessible to anyone with its link and is not password protected.
 
+## Optional E/Z coverage
+
+The practice setup includes an **Include E/Z isomers** checkbox (on by default).
+Turn it off to exclude all E/Z alkene records from new sets and remove E/Z from
+the relationship answer choices and practice guide. The setting is saved with
+the set and listed in its report. Existing sets keep their original setting.
+The complete instructor problem bank remains available for preview.
+
 ## Chemistry coverage
 
 - Assign configurations at labeled tetrahedral carbons in line-angle, Fischer, and Newman views.
