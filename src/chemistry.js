@@ -61,11 +61,19 @@ export function buildSet(settings){
       q={task,a:a.id,b:b.id,va:a.views.indexOf(va),vb:b.views.indexOf(vb),answer,explanation:explanation(a,b,answer)};
     }else{
       let pool=candidates.filter(m=>m.centers.length);
+      // Choose unused molecules before preferring a drawing perspective. A new
+      // orientation of a molecule already asked is still the same question.
+      let unused=pool.filter(m=>!used.has(task+m.id));
+      if(!unused.length&&settings.difficulty==='progressive'){
+        const remaining=available.filter(m=>m.centers.length&&!used.has(task+m.id));
+        if(remaining.length){const nextLevel=Math.min(...remaining.map(m=>m.level));unused=remaining.filter(m=>m.level===nextLevel);}
+      }
+      pool=unused.length?unused:pool;
       if(task==='assign'){
-        let preferredPool=pool.filter(m=>views(m,settings).some(v=>v.kind===preferred));
+        const preferredPool=pool.filter(m=>views(m,settings).some(v=>v.kind===preferred));
         if(preferredPool.length)pool=preferredPool;
       }
-      let unused=pool.filter(m=>!used.has(task+m.id));const m=pick(unused.length?unused:pool);used.add(task+m.id);
+      const m=pick(pool);used.add(task+m.id);
       const view=pick(views(m,settings).filter(v=>v.kind===preferred))||pick(views(m,settings));
       const answer=m.centers.map(c=>`${c.locant}${c.value}`).sort().join(', ');
       q={task,a:m.id,va:m.views.indexOf(view),answer:task==='draw'?m.smiles:answer,explanation:`${m.name}. ${m.centers.map(c=>`C${c.locant} is ${c.value}`).join('; ')}. Rank substituents using CIP rules: atomic number first, then the first point of difference. View the lowest-priority group away: clockwise 1 → 2 → 3 is R; counterclockwise is S. Fischer horizontal bonds point toward you, so reverse a result obtained with priority 4 on a horizontal bond.`};

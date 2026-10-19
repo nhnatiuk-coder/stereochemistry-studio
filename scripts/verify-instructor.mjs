@@ -20,9 +20,15 @@ try{
   await page.getByRole('radio',{name:'5',exact:true}).check();await page.getByRole('button',{name:'Start 5 questions'}).click();
   console.log('Student practice opened.');await page.goto('http://127.0.0.1:5191/#/instructor',{waitUntil:'domcontentloaded'});
   await page.getByRole('heading',{name:'Preview the complete problem bank.'}).waitFor();
-  assert.equal(await page.locator('article[data-problem-id]').count(),12);console.log('Catalog cards displayed.');
+  assert.equal(await page.locator('article[data-problem-id]').count(),12);await page.getByRole('button',{name:'Assign R/S (55)',exact:true}).waitFor();console.log('55 unique R/S problems displayed.');
   await page.getByRole('combobox',{name:'Projection',exact:true}).selectOption('newman');
-  assert.equal(await page.locator('.catalog-problem .view-label').first().innerText(),'Newman projection');
+  const assignmentPicker=page.getByRole('combobox',{name:'Drawing perspective',exact:true}).first();
+  const assignmentOptions=await assignmentPicker.locator('option').allTextContents();
+  assert.ok(assignmentOptions.every(t=>t.includes('Newman projection')));
+  const originalProblem=await page.locator('article[data-problem-id]').first().getAttribute('data-problem-id');
+  const assignmentValues=await assignmentPicker.locator('option').all();
+  if(assignmentValues.length>1)await assignmentPicker.selectOption(await assignmentValues.at(-1).getAttribute('value'));
+  assert.equal(await page.locator('article[data-problem-id]').first().getAttribute('data-problem-id'),originalProblem);
   await page.getByRole('button',{name:/Draw from a Name \(55\)/}).click();
   assert.equal(await page.locator('article[data-problem-id]').count(),12);
   await page.getByRole('checkbox',{name:'Show answers and explanations'}).uncheck();

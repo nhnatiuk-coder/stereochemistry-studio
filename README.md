@@ -13,9 +13,11 @@ The default set is **Mixed / Progressive / 50 questions**. Students can choose A
 - Student practice: append `/#/student` to the site address (the default page).
 - Instructor problem bank: append `/#/instructor` to the site address.
 
-The instructor page lists every assignment view (307), every R/S drawing prompt
-(55), and every unordered compound pairing (2,850). Pair selectors expose all
-available projection combinations. Filter by task, difficulty, projection,
+The instructor page lists each unique R/S assignment (55), every R/S drawing prompt
+(55), and every unordered compound pairing (2,850). R/S and pair selectors expose alternate projections without counting them as
+separate questions. Progressive sets use unused eligible molecules before
+repeating a structure. Fixed difficulty or projection restrictions may exhaust
+the eligible pool in longer sets. Filter by task, difficulty, projection,
 relationship, or search by name, formula, answer, or stable problem ID. Answers
 can be shown or hidden. Instructor preview sets use separate saved progress;
 students do not see the instructor solution toggle. The instructor page is
