@@ -16,6 +16,19 @@ def cip(m):
     return [{'atom':a.GetIdx(),'locant':a.GetIntProp('locant') if a.HasProp('locant') else a.GetIdx()+1,'value':a.GetProp('_CIPCode')} for a in m.GetAtoms() if a.HasProp('_CIPCode')]
 
 def text(x,y,s,size=21): return f'<text x="{x}" y="{y}" text-anchor="middle" dominant-baseline="middle" font-family="Arial,sans-serif" font-size="{size}" fill="#172e3e">{s}</text>'
+def attachment_label(x,y,label,side=1,size=20):
+    """Anchor the bonded atom, never the bounding-box center of a formula.
+
+    Condensed carbon chains begin at their first C. Hydroxyl labels put H
+    outward (HO on the left, OH on the right), so O faces the bond.
+    """
+    atom='O' if label=='OH' else 'C' if label.startswith('CH') else label
+    body=text(x,y,atom,size)
+    if label=='OH':
+        body+=text(x+side*15,y,'H',size)
+    elif label.startswith('CH'):
+        body+=f'<text x="{x+7}" y="{y}" text-anchor="start" dominant-baseline="middle" font-family="Arial,sans-serif" font-size="{size}" fill="#172e3e">{label[1:]}</text>'
+    return f'<g data-attachment-atom="{atom}" data-attachment-x="{x}" data-attachment-y="{y}" data-group="{label}">{body}</g>'
 def line(x,y,a,b): return f'<path d="M{x},{y} L{a},{b}" stroke="#172e3e" stroke-width="2.4" fill="none"/>'
 def svg(body): return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 320" role="img">'+body+'</svg>'
 
@@ -36,7 +49,7 @@ def projection(base, centers, chain, groups, flips, kind, rotation=0):
         # Every center: horizontal bonds project toward viewer, vertical away.
         # 180-degree rotation is a legal whole-projection rotation.
         n=len(centers); ys=[110] if n==1 else [105,205]
-        body+=text(200,ys[0]-65,groups[0])+text(200,ys[-1]+65,groups[-1])
+        body+=attachment_label(200,ys[0]-65,groups[0])+attachment_label(200,ys[-1]+65,groups[-1])
         body+=line(200,ys[0]-48,200,ys[-1]+48)
         for k,ci in enumerate(centers):
             a=m.GetAtomWithIdx(ci); prev,nxt=chain[k],chain[k+2]
@@ -46,7 +59,7 @@ def projection(base, centers, chain, groups, flips, kind, rotation=0):
             coords={prev:(0,1,-1),nxt:(0,-1,-1),others[0]:(-1,0,1),others[1]:(1,0,1)}
             local_tag(m,ci,coords)
             labels=[('OH' if m.GetAtomWithIdx(i).GetSymbol()=='O' else m.GetAtomWithIdx(i).GetSymbol()) for i in others]
-            body+=line(120,ys[k],280,ys[k])+text(90,ys[k],labels[0])+text(310,ys[k],labels[1])
+            body+=line(120,ys[k],280,ys[k])+attachment_label(105,ys[k],labels[0],-1)+attachment_label(295,ys[k],labels[1],1)
             body+=text(216,ys[k]-19,f'C{a.GetIntProp("locant")}',12)
         if rotation: body=f'<g transform="rotate(180 200 160)">{body}</g>' # unused: labels would invert
     else:
@@ -67,7 +80,10 @@ def projection(base, centers, chain, groups, flips, kind, rotation=0):
                 body+=line(200+x*start,160+y*start,200+x*99,160+y*99)
                 atom=m.GetAtomWithIdx(i)
                 label=groups[0 if k==0 else -1] if atom.GetSymbol()=='C' else ('OH' if atom.GetSymbol()=='O' else atom.GetSymbol())
-                body+=text(round(200+x*124,2),round(160+y*124,2),label)
+                # Leave clear space above/below the upright attachment atom.
+                # This keeps each ray at its true projection angle while
+                # preventing it from passing through an H or a chain suffix.
+                body+=attachment_label(round(200+x*99,2),round(160+y*99+(15 if y>0 else -15),2),label,-1 if x<-.1 else 1,19)
             local_tag(m,ci,coords)
         body+='<circle cx="200" cy="160" r="5" fill="#172e3e"/>'+text(200,304,'View C2 → C3 • dot = front carbon',13)
     m=Chem.RemoveHs(m)

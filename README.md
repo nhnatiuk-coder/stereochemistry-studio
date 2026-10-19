@@ -68,6 +68,15 @@ npm run build:cloudflare
 
 After `npm run build:offline`, `npm run test:ui` runs the end-to-end browser verification. Install the Playwright browser first with `npx playwright install chromium`, or set `CHROMIUM_EXECUTABLE` to an existing compatible Chromium binary.
 
+## Projection drawing checks
+
+Fischer and Newman condensed groups anchor the bonded C or O independently
+from the remaining text. Left-side hydroxyl groups appear as HO so that O
+faces the bond. `CHROMIUM_EXECUTABLE=/path/to/chromium node
+scripts/verify-projections.mjs` checks all 142 projection views for clipped
+labels and bonds passing through text. The generator retains the same
+verified stereochemistry, atom numbering, question IDs, and view order.
+
 ## Third-party software
 
 Ketcher 3.13.0 (Apache-2.0), RDKit.js 2025.3.4 (BSD-3-Clause), React (MIT), and other open-source dependencies are included. See `THIRD_PARTY_NOTICES.txt` for retained licenses. Build-time RDKit is 2026.9.1; the molecule bank is also checked against the browser engine.
