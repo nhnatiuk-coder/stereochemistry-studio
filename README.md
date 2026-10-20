@@ -6,7 +6,7 @@ A companion to Organic Nomenclature Studio and the SN1/SN2/E1/E2 practice progra
 
 Install Node.js 22 or newer, run `npm ci`, then `npm run dev`. To publish on Cloudflare, follow [DEPLOYMENT.md](DEPLOYMENT.md). The separate downloadable ZIP includes an offline HTML edition.
 
-The default set is **Mixed / Progressive / 50 questions**. Students can choose Assign R/S, Draw from a Name, or Compare Compounds. Hints, three attempts, worked explanations, saved progress, and a separate report page are included. The report can be printed to PDF or exported as JSON. Instructor preview uses the same report flow and is labeled in the report.
+The default set is **Mixed / Progressive / 50 questions**. Students can choose Assign R/S, Draw from a Name, or Compare Compounds. Hints, three attempts, an explicit correct answer after success or the third incorrect attempt, worked explanations, saved progress, and a separate report page are included. The report can be printed to PDF or exported as JSON. Instructor preview uses the same report flow and is labeled in the report.
 
 ## Student and instructor pages
 
